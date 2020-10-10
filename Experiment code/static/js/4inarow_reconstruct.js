@@ -1,4 +1,4 @@
-var b,bp,wp,user_color,m,num_games,num_practice_games, current_color, gi,mi, current_move, game_data
+var b,bp,wp,user_color,m,num_games,num_practice_games, current_color, gi,mi, current_move, game_data, player_save,gi_save,mi_save, steps
 var tiles = [];
 var game_status = "ready"
 //game_status = "ready";
@@ -20,30 +20,81 @@ function load_game_data(filename){
 	});
 }
 
-function select_random_board() {
-	if (game_data != null) {
-		player = Math.floor((Math.random() * (game_data.length - 1)) + 1);  //
-		gi = Math.floor((Math.random() * game_data[player].length));  // game index, move index
-		mi = Math.floor((Math.random() * (game_data[player][gi].length + 1))) - 1;
-		data = game_data[player][gi]
-		bp = data[mi][1]
-		wp = data[mi][2]
-		// initialize_items(bp,wp)
-		// play_data(data,mi)
+
+function load_state(){
+	create_board()
+	if(mi>=0){
+		var data = game_data[player][gi][mi-1]
+		var color = data[0]
+		var bp = data[1]
+		var wp = data[2]
+		var move = data[3]
+		for(var i=0; i<M*N; i++){
+			if(bp[i]=='1'){
+				add_piece(i, 0);
+			}
+			if(wp[i]=='1'){
+				add_piece(i, 1);
+			}
+		}
+		add_piece(move,color);
+		show_last_move(move, color);
+		if(mi>0) {
+			data = game_data[player][gi][mi - 1]
+			color = data[0]
+			move = data[3]
+			show_last_move(move, color);
+		}
+
 	}
 }
-
-function play_data(data,mi) {
-	if (mi < data.length) {
-		var current_move = data[mi][3];
-		var current_color = data[mi][0];
-		add_piece(current_move, current_color);
-		show_last_move(current_move, current_color);
-		clearTimeout(timer);
-		mi++;
-		timer = setTimeout(play_data, 1000)
-
+function load_state_recon(game_num) {
+	create_board()
+	var data = game_data[player_save][gi_save][mi_save]
+	bp_save = data[1]
+	wp_save = data[2]
+	for (var i = 0; i < M * N; i++) {
+		if (bp_save[i] == '1') {
+			add_piece(i, 0);
+		}
+		if (wp_save[i] == '1') {
+			add_piece(i, 1);
+		}
 	}
+	steps = game_data[player_save][gi_save].length
+	user_move(game_num)
+}
+
+function play_next_move(game_num){
+	if (mi<game_data[player][gi].length){
+	var data = game_data[player][gi][mi]
+	var color = data[0]
+	var move = data[3]
+	add_piece(move,color);
+	show_last_move(move, color);
+	mi++
+	timer = setTimeout(play_next_move,500);
+	}
+	else{
+		timer = setTimeout(function (){
+			load_state_recon(game_num)
+		},1000)
+			}
+}
+
+function select_random_board(game_num) {
+	if (game_data != null) {
+		player = Math.floor((Math.random() * (game_data.length - 1)) + 1);
+		gi = Math.floor((Math.random() * game_data[player].length));
+		mi = Math.floor((Math.random() * (game_data[player][gi].length + 1))) - 1;
+		player_save = player
+		gi_save = gi
+		mi_save = mi
+		load_state()
+	}
+	timer = setTimeout(function (){
+		play_next_move(game_num)
+	},500)
 }
 
 function create_board() {
@@ -150,44 +201,32 @@ function check_win(color){
 	return []
 }
 
-function check_draw(){
-	for(var i=0; i<M*N; i++)
-		if(bp[i]==0 && wp[i]==0)
-			return false;
-	return true;
-}
+//function check_draw(){
+//	for(var i=0; i<M*N; i++)
+//		if(bp[i]==0 && wp[i]==0)
+//			return false;
+//	return true;
+//}
 
-function show_win(color, pieces) {
-	for(i=0; i<pieces.length; i++){
-		if(color==0)
-			$("#tile_" + pieces[i] + " .blackPiece").animate({"backgroundColor": win_color}, 250)
-		else
-			$("#tile_" + pieces[i] + " .whitePiece").animate({"backgroundColor": win_color}, 250)
-	}
-}
+//function show_win(color, pieces) {
+//	for(i=0; i<pieces.length; i++){
+//		if(color==0)
+//			$("#tile_" + pieces[i] + " .blackPiece").animate({"backgroundColor": win_color}, 250)
+//		else
+//			$("#tile_" + pieces[i] + " .whitePiece").animate({"backgroundColor": win_color}, 250)
+//	}
+//}
 
 function check_recon_complete(steps) {
 	return bp.filter(x => x==1).length + wp.filter(x => x==1).length == steps;
 }
 
-function initialize_items() {       //input initial position for black and white pieces, add the pieces on board and return what player should start with
-	for (i=0; i<=bp.length; i++) {
-		if (bp[i] == 1) {
-			add_piece(i,0)
-		}
-	}
-	for (i=0; i<=wp.length; i++){
-		if (wp[i] == 1) {
-			add_piece(i, 1)
-		}
-	}
-	if (bp.filter(x => x==1).length==wp.filter(x => x==1).length){
-		current_color = 0
-	}
-	else current_color = 1
-}
 
 function user_move(game_num) {
+	if (bp.filter(x => x==1).length == wp.filter(x => x==1).length){
+		current_color = 0
+	}
+	else {current_color = 1}
 	color_string = (current_color == 0 ? 'black' : 'white')
 	log_data({"event_type": "your turn", "event_info" : {"bp" : bp.join(""), "wp": wp.join(""), "user_color" : color_string}})
 	$('.headertext h1').text('You now play ' + color_string + ".");
@@ -208,15 +247,15 @@ function user_move(game_num) {
 		$(".clickprompt").hide();
 		dismissed_click_prompt = true;
 		//winning_pieces = check_win(user_color)    // DON'T WANT TO SHOW WIN ANY POINT IN THE GAME
-	 	if (check_recon_complete(10)){
-			//show_win(user_color,winning_pieces)
+	 	if (check_recon_complete(steps)){
+			show_win(user_color,winning_pieces)
 			log_data({"event_type": "reconstruction over", "event_info" : {"bp" : bp.join(""), "wp": wp.join(""), "winning_pieces" : winning_pieces, "user_color" : color_string}})
 			$('.headertext h1').text('Reconstruction over').css('color', '#000000');
 			end_game(game_num,'win')
 		}
 		else {
-			user_move(game_num)
-			current_color = 1-current_color
+		current_color = 1-current_color
+		user_move(game_num)
 		}
 	});
 }
@@ -224,7 +263,7 @@ function user_move(game_num) {
 
 function start_game(game_num){
 	log_data({"event_type": "start game", "event_info" : {"game_num" : game_num}})
-	create_board()
+	select_random_board(game_num)
 	if(game_num<num_practice_games){
 		$('.gamecount').text("Practice game " + (game_num+1).toString() + " out of " + num_practice_games.toString());
 	}
@@ -233,8 +272,6 @@ function start_game(game_num){
 	}
 	if (!dismissed_click_prompt) $('.clickprompt').show();
 	log_data({"event_type": "start game", "event_info": {"game_num": game_num, "is_practice": game_num<num_practice_games, "level": level, "user_color" : (user_color == 0 ? 'black' : 'white')}})
-	select_random_board()
-	initialize_items(bp,wp)
 	user_move(game_num)
 }
 
