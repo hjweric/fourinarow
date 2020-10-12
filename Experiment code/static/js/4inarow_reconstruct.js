@@ -224,8 +224,7 @@ function check_recon_complete(steps) {
 
 function user_move(game_num) {
 	if (bp.filter(x => x==1).length == wp.filter(x => x==1).length){
-		current_color = 0
-	}
+		current_color = 0}
 	else {current_color = 1}
 	color_string = (current_color == 0 ? 'black' : 'white')
 	log_data({"event_type": "your turn", "event_info" : {"bp" : bp.join(""), "wp": wp.join(""), "user_color" : color_string}})
@@ -248,13 +247,12 @@ function user_move(game_num) {
 		dismissed_click_prompt = true;
 		//winning_pieces = check_win(user_color)    // DON'T WANT TO SHOW WIN ANY POINT IN THE GAME
 	 	if (check_recon_complete(steps)){
-			show_win(user_color,winning_pieces)
-			log_data({"event_type": "reconstruction over", "event_info" : {"bp" : bp.join(""), "wp": wp.join(""), "winning_pieces" : winning_pieces, "user_color" : color_string}})
+			//show_win(current_color,winning_pieces)
+			//log_data({"event_type": "reconstruction over", "event_info" : {"bp" : bp.join(""), "wp": wp.join(""), "winning_pieces" : winning_pieces, "user_color" : color_string}})
 			$('.headertext h1').text('Reconstruction over').css('color', '#000000');
-			end_game(game_num,'win')
+			end_game(game_num,"win")
 		}
 		else {
-		current_color = 1-current_color
 		user_move(game_num)
 		}
 	});
@@ -289,11 +287,10 @@ function adjust_level(result){
 }
 
 function end_game(game_num,result){
-	log_data({"event_type": "end game", "event_info" : {"game_num" : game_num, "result" : result,"level" : level}})
-	adjust_level(result)
+	//log_data({"event_type": "end game", "event_info" : {"game_num" : game_num, "result" : result,"level" : level}})
+	//adjust_level(result)
 	$("#nextgamebutton").show().css({"display" :"inline"}).off("click").on("click",function(){
 		$("#nextgamebutton").hide()
-		user_color = (user_color+1)%2
 		$(".canvas").empty();
 		if(game_num == num_practice_games + num_games-1){
 			finish_experiment()
