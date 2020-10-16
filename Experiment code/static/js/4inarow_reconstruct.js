@@ -1,4 +1,5 @@
 var b,bp,wp,user_color,m,num_games,num_practice_games, current_color, gi,mi, current_move, game_data, player_save,gi_save,mi_save, steps
+var total_steps, level
 var tiles = [];
 var game_status = "ready"
 //game_status = "ready";
@@ -23,32 +24,25 @@ function load_game_data(filename){
 
 function load_state(){
 	create_board()
-	if(mi>=0){
-		var data = game_data[player][gi][mi-1]
-		var color = data[0]
-		var bp = data[1]
-		var wp = data[2]
-		var move = data[3]
-		for(var i=0; i<M*N; i++){
-			if(bp[i]=='1'){
-				add_piece(i, 0);
-			}
-			if(wp[i]=='1'){
-				add_piece(i, 1);
-			}
+	var data = game_data[player][gi][mi]
+	//var color = data[0]
+	var miu = mi
+	var cat = gi
+	var bp = data[1]
+	var wp = data[2]
+	//var move = data[3]
+	for(var i=0; i<M*N; i++){
+		if(bp[i]==1){
+			add_piece(i, 0);
 		}
-		add_piece(move,color);
-		show_last_move(move, color);
-		if(mi>0) {
-			data = game_data[player][gi][mi - 1]
-			color = data[0]
-			move = data[3]
-			show_last_move(move, color);
+		if(wp[i]==1){
+			add_piece(i, 1);
 		}
-
 	}
 }
+
 function load_state_recon(game_num) {
+	log_data({"game_num": game_num})
 	create_board()
 	var data = game_data[player_save][gi_save][mi_save]
 	bp_save = data[1]
@@ -61,40 +55,69 @@ function load_state_recon(game_num) {
 			add_piece(i, 1);
 		}
 	}
-	steps = game_data[player_save][gi_save].length
-	user_move(game_num)
+	timer = setTimeout(function(){
+		user_move(game_num)
+	},500)
 }
 
 function play_next_move(game_num){
-	if (mi<game_data[player][gi].length){
-	var data = game_data[player][gi][mi]
-	var color = data[0]
-	var move = data[3]
+	if (mi< mi_save+steps){
+		var data = game_data[player][gi][mi]
+		var color = data[0]
+		var move = data[3]
 	add_piece(move,color);
 	show_last_move(move, color);
 	mi++
-	timer = setTimeout(play_next_move,500);
+	timer = setTimeout(
+		function(){
+			play_next_move(game_num)},500);
 	}
 	else{
+		//add_piece(move,color);
+		//show_last_move(move, color);
+		create_board()
+		total_steps = bp.filter(x => x==1).length + wp.filter(x => x==1).length
 		timer = setTimeout(function (){
 			load_state_recon(game_num)
-		},1000)
+		},3000)
 			}
 }
 
-function select_random_board(game_num) {
+function get_level_game(){
+	if (game_data[player][gi][0]>1000){
+		return game_data[player][gi][0][4]
+	}
+	else {return  game_data[player][gi][1][4]}
+}
+
+function generate_ok_games() {
+	steps = getRndInteger(4,10)
 	if (game_data != null) {
 		player = Math.floor((Math.random() * (game_data.length - 1)) + 1);
 		gi = Math.floor((Math.random() * game_data[player].length));
-		mi = Math.floor((Math.random() * (game_data[player][gi].length + 1))) - 1;
-		player_save = player
-		gi_save = gi
-		mi_save = mi
+		if (game_data[player][gi].length < steps + 1) {
+			generate_ok_games()
+		} else {
+			var game_length = game_data[player][gi].length
+			level = get_level_game()
+			mi = getRndEorONumber(0,game_length-steps,start_color)
+			player_save = player
+			gi_save = gi
+			mi_save = mi
+			log_data({"mi":mi,game_length})
+		}
+		log_data({"event_type": "state_para", "event_info" : {"start_color":start_color, "player" : player, "gameIndex":gi,
+			"move_index":mi, "steps": steps, "level": level}})
 		load_state()
 	}
+}
+
+
+function select_random_board(game_num) {
+	generate_ok_games()
 	timer = setTimeout(function (){
 		play_next_move(game_num)
-	},500)
+	},200)
 }
 
 function create_board() {
@@ -217,17 +240,13 @@ function check_win(color){
 //	}
 //}
 
-function check_recon_complete(steps) {
-	return bp.filter(x => x==1).length + wp.filter(x => x==1).length == steps;
-}
-
 
 function user_move(game_num) {
 	if (bp.filter(x => x==1).length == wp.filter(x => x==1).length){
 		current_color = 0}
 	else {current_color = 1}
 	color_string = (current_color == 0 ? 'black' : 'white')
-	log_data({"event_type": "your turn", "event_info" : {"bp" : bp.join(""), "wp": wp.join(""), "user_color" : color_string}})
+	log_data({"event_type": "your turn", "event_info" : {"bp" : bp.join(""), "wp": wp.join(""), "user_color" : color_string, game_num}})
 	$('.headertext h1').text('You now play ' + color_string + ".");
 	$('.canvas, .tile').css('cursor', 'pointer');
 	$('.usedTile, .usedTile div').css('cursor', 'default');
@@ -246,19 +265,21 @@ function user_move(game_num) {
 		$(".clickprompt").hide();
 		dismissed_click_prompt = true;
 		//winning_pieces = check_win(user_color)    // DON'T WANT TO SHOW WIN ANY POINT IN THE GAME
-	 	if (check_recon_complete(steps)){
+	 	if (bp.filter(x => x==1).length + wp.filter(x => x==1).length == total_steps){
 			//show_win(current_color,winning_pieces)
-			//log_data({"event_type": "reconstruction over", "event_info" : {"bp" : bp.join(""), "wp": wp.join(""), "winning_pieces" : winning_pieces, "user_color" : color_string}})
+			log_data({"event_type": "reconstruction over", "event_info" : {"bp" : bp.join(""), "wp": wp.join(""), "game_num":game_num}})
 			$('.headertext h1').text('Reconstruction over').css('color', '#000000');
-			end_game(game_num,"win")
+			end_game(game_num)
 		}
 		else {
-		user_move(game_num)
+			user_move(game_num)
 		}
 	});
 }
 
-
+function check_all_reconstructed(total_steps){
+	return bp.filter(x => x==1).length + wp.filter(x => x==1).length == total_steps;
+}
 function start_game(game_num){
 	log_data({"event_type": "start game", "event_info" : {"game_num" : game_num}})
 	select_random_board(game_num)
@@ -269,25 +290,13 @@ function start_game(game_num){
 		$('.gamecount').text("Game " + (game_num-num_practice_games+1).toString() + " out of " + num_games.toString());
 	}
 	if (!dismissed_click_prompt) $('.clickprompt').show();
-	log_data({"event_type": "start game", "event_info": {"game_num": game_num, "is_practice": game_num<num_practice_games, "level": level, "user_color" : (user_color == 0 ? 'black' : 'white')}})
+	log_data({"event_type": "start game", "event_info": {"game_num": game_num, "is_practice": game_num<num_practice_games,"user_color" : (user_color == 0 ? 'black' : 'white')}})
 	user_move(game_num)
 }
 
-function adjust_level(result){
-	old_level = level
-	if(result=='win'){
-		if(lastresult=='win'){
-			category = Math.min(category+1,5)
-		}
-	}
-	if(result=='opponent win')
-		category=Math.max(category-1,1)
-	lastresult = result
-	log_data({"event_type": "adjust level", "event_info" : {"category" : category}})
-}
 
-function end_game(game_num,result){
-	//log_data({"event_type": "end game", "event_info" : {"game_num" : game_num, "result" : result,"level" : level}})
+function end_game(game_num){
+	log_data({"event_type": "end game", "event_info" : {"game_num" : game_num, "level" : level}})
 	//adjust_level(result)
 	$("#nextgamebutton").show().css({"display" :"inline"}).off("click").on("click",function(){
 		$("#nextgamebutton").hide()
@@ -375,8 +384,21 @@ function initialize_task(_num_games,_num_practice_games,callback){
 	callback()
 }
 
+function getRndInteger(min, max) {
+	return Math.floor(Math.random() * (max - min) ) + min;
+}
+function getRndEorONumber(min,max, eo){
+	var rand = getRndInteger(min,max)
+	log_data({"number": rand})
+	if ((rand%2 == eo)){return rand}
+	else if (rand<max) {return rand+1}
+	else {return rand-1}
+}
+
 function start_experiment(response){
 	game_data = response
+	start_color = Math.round(Math.random())
+	log_data({"start_color": start_color})
 	makemove = Module.cwrap('makemove', 'number', ['number','string','string','number','number'])
 	$(document).on("contextmenu",function(e){
 		e.preventDefault()
