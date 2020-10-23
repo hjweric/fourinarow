@@ -56,7 +56,6 @@ function load_state_recon(game_num) {
 		}
 	}
 	user_move(game_num)
-
 }
 
 function play_next_move(game_num){
