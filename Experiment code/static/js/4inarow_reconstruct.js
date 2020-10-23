@@ -55,9 +55,8 @@ function load_state_recon(game_num) {
 			add_piece(i, 1);
 		}
 	}
-	timer = setTimeout(function(){
-		user_move(game_num)
-	},500)
+	user_move(game_num)
+
 }
 
 function play_next_move(game_num){
@@ -70,16 +69,16 @@ function play_next_move(game_num){
 	mi++
 	timer = setTimeout(
 		function(){
-			play_next_move(game_num)},500);
+			play_next_move(game_num)},3000);
 	}
 	else{
 		//add_piece(move,color);
 		//show_last_move(move, color);
-		create_board()
 		total_steps = bp.filter(x => x==1).length + wp.filter(x => x==1).length
+		create_board()
 		timer = setTimeout(function (){
 			load_state_recon(game_num)
-		},3000)
+		},5000)
 			}
 }
 
@@ -115,9 +114,10 @@ function generate_ok_games() {
 
 function select_random_board(game_num) {
 	generate_ok_games()
+	$('.headertext h1').text('This game has ' + steps.toString() + ' moves').css('color', '#000000');
 	timer = setTimeout(function (){
 		play_next_move(game_num)
-	},200)
+	},5000)
 }
 
 function create_board() {
@@ -162,83 +162,6 @@ function show_last_move(i, color) {
 		$("#tile_" + i.toString()).append($("<div>" , {"class" : "whiteShadow"}))
 	}
 }
-
-function check_win(color){
-	fourinarows = [[ 0,  9, 18, 27],
-				   [ 1, 10, 19, 28],
-				   [ 2, 11, 20, 29],
-				   [ 3, 12, 21, 30],
-				   [ 4, 13, 22, 31],
-				   [ 5, 14, 23, 32],
-				   [ 6, 15, 24, 33],
-				   [ 7, 16, 25, 34],
-				   [ 8, 17, 26, 35],
-				   [ 0, 10, 20, 30],
-				   [ 1, 11, 21, 31],
-				   [ 2, 12, 22, 32],
-				   [ 3, 13, 23, 33],
-				   [ 4, 14, 24, 34],
-				   [ 5, 15, 25, 35],
-				   [ 3, 11, 19, 27],
-				   [ 4, 12, 20, 28],
-				   [ 5, 13, 21, 29],
-				   [ 6, 14, 22, 30],
-				   [ 7, 15, 23, 31],
-				   [ 8, 16, 24, 32],
-				   [ 0,  1,  2,  3],
-				   [ 1,  2,  3,  4],
-				   [ 2,  3,  4,  5],
-				   [ 3,  4,  5,  6],
-				   [ 4,  5,  6,  7],
-				   [ 5,  6,  7,  8],
-				   [ 9, 10, 11, 12],
-				   [10, 11, 12, 13],
-				   [11, 12, 13, 14],
-				   [12, 13, 14, 15],
-				   [13, 14, 15, 16],
-				   [14, 15, 16, 17],
-				   [18, 19, 20, 21],
-				   [19, 20, 21, 22],
-				   [20, 21, 22, 23],
-				   [21, 22, 23, 24],
-				   [22, 23, 24, 25],
-				   [23, 24, 25, 26],
-				   [27, 28, 29, 30],
-				   [28, 29, 30, 31],
-				   [29, 30, 31, 32],
-				   [30, 31, 32, 33],
-				   [31, 32, 33, 34],
-				   [32, 33, 34, 35]]
-
-	for(var i=0;i<fourinarows.length;i++){
-		var n = 0;
-		for(var j=0;j<N;j++){
-			if(color==0)//BLACK
-				n+=bp[fourinarows[i][j]]
-			else
-				n+=wp[fourinarows[i][j]]
-		}
-		if(n==N)
-			return fourinarows[i]
-	}
-	return []
-}
-
-//function check_draw(){
-//	for(var i=0; i<M*N; i++)
-//		if(bp[i]==0 && wp[i]==0)
-//			return false;
-//	return true;
-//}
-
-//function show_win(color, pieces) {
-//	for(i=0; i<pieces.length; i++){
-//		if(color==0)
-//			$("#tile_" + pieces[i] + " .blackPiece").animate({"backgroundColor": win_color}, 250)
-//		else
-//			$("#tile_" + pieces[i] + " .whitePiece").animate({"backgroundColor": win_color}, 250)
-//	}
-//}
 
 
 function user_move(game_num) {
@@ -291,7 +214,6 @@ function start_game(game_num){
 	}
 	if (!dismissed_click_prompt) $('.clickprompt').show();
 	log_data({"event_type": "start game", "event_info": {"game_num": game_num, "is_practice": game_num<num_practice_games,"user_color" : (user_color == 0 ? 'black' : 'white')}})
-	user_move(game_num)
 }
 
 
